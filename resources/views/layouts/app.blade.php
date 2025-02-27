@@ -29,18 +29,23 @@
         
         /* Sidebar styles */
         .sidebar {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-            padding: 48px 0 0;
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            min-height: calc(100vh - 56px);
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            border-right: 1px solid #dee2e6;
         }
         
         @media (max-width: 767.98px) {
             .sidebar {
-                top: 5rem;
+                position: fixed;
+                top: 56px;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1000;
+                padding-top: 20px;
+                background-color: #f8f9fa;
+                overflow-y: auto;
             }
         }
         
@@ -66,6 +71,30 @@
             text-transform: uppercase;
         }
         
+        /* Submenu styles */
+        .submenu {
+            display: block;
+            padding-left: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .submenu .nav-link {
+            padding: 0.3rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .submenu .nav-item {
+            margin-bottom: 0;
+        }
+        
+        .sidebar .nav-item {
+            width: 100%;
+        }
+        
+        .sidebar .nav-link {
+            cursor: pointer;
+        }
+        
         /* Main content adjustment */
         @media (min-width: 768px) {
             .ms-sm-auto {
@@ -82,6 +111,9 @@
     <div id="app" class="d-flex flex-column min-vh-100">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
+                <button class="navbar-toggler me-2 d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle sidebar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
                 <a class="navbar-brand" href="{{ url('/') }}">
                     {{ config('app.name', 'Fakturace') }}
                 </a>
@@ -167,11 +199,11 @@
             </div>
         </nav>
 
-        <div class="container-fluid">
-            <div class="row">
+        <div class="container-fluid mt-3">
+            <div class="row g-0">
                 @auth
                 <!-- Sidebar -->
-                <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" id="sidebarMenu">
+                <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar" id="sidebarMenu">
                     <div class="position-sticky pt-3">
                         <ul class="nav flex-column">
                             <li class="nav-item">
@@ -182,14 +214,12 @@
                             </li>
                             
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
-                                   data-bs-toggle="collapse" href="#customersSubmenu" role="button"
-                                   aria-expanded="{{ request()->routeIs('customers.*') ? 'true' : 'false' }}" aria-controls="customersSubmenu">
+                                <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}" href="{{ route('customers.index') }}">
                                     <i class="fas fa-users me-2"></i>
                                     {{ __('Zákazníci') }}
                                     <i class="fas fa-chevron-down float-end"></i>
                                 </a>
-                                <div class="collapse {{ request()->routeIs('customers.*') ? 'show' : '' }}" id="customersSubmenu">
+                                <div class="submenu" id="customersSubmenu">
                                     <ul class="nav flex-column ms-3">
                                         <li class="nav-item">
                                             <a class="nav-link {{ request()->routeIs('customers.index') ? 'active' : '' }}" href="{{ route('customers.index') }}">
@@ -206,14 +236,12 @@
                             </li>
                             
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}"
-                                   data-bs-toggle="collapse" href="#invoicesSubmenu" role="button"
-                                   aria-expanded="{{ request()->routeIs('invoices.*') ? 'true' : 'false' }}" aria-controls="invoicesSubmenu">
+                                <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
                                     <i class="fas fa-file-invoice me-2"></i>
                                     {{ __('Faktury') }}
                                     <i class="fas fa-chevron-down float-end"></i>
                                 </a>
-                                <div class="collapse {{ request()->routeIs('invoices.*') ? 'show' : '' }}" id="invoicesSubmenu">
+                                <div class="submenu" id="invoicesSubmenu">
                                     <ul class="nav flex-column ms-3">
                                         <li class="nav-item">
                                             <a class="nav-link {{ request()->routeIs('invoices.index') && !request()->has('status') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
@@ -266,6 +294,20 @@
                 @endauth
             </div>
         </div>
+        
+        <!-- Footer -->
+        <footer class="footer mt-auto py-3 bg-light">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <span class="text-muted">&copy; {{ date('Y') }} Fakturační systém</span>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="text-muted">Verze 1.0</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
     
     <!-- Bootstrap JS Bundle with Popper -->
@@ -273,5 +315,62 @@
     
     <!-- Additional Scripts -->
     @stack('scripts')
+    
+    <!-- Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                const sidebar = document.getElementById('sidebarMenu');
+                const toggleButton = document.querySelector('[data-bs-target="#sidebarMenu"]');
+                
+                if (window.innerWidth < 768 &&
+                    sidebar &&
+                    sidebar.classList.contains('show') &&
+                    !sidebar.contains(event.target) &&
+                    !toggleButton.contains(event.target)) {
+                    
+                    const bsCollapse = new bootstrap.Collapse(sidebar);
+                    bsCollapse.hide();
+                }
+            });
+            
+            // Toggle submenu visibility on parent click
+            document.querySelectorAll('.sidebar .nav-item > .nav-link').forEach(link => {
+                if (link.nextElementSibling && link.nextElementSibling.classList.contains('submenu')) {
+                    link.addEventListener('click', function(e) {
+                        const submenu = this.nextElementSibling;
+                        const icon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+                        
+                        if (icon) {
+                            icon.classList.toggle('fa-chevron-up');
+                            icon.classList.toggle('fa-chevron-down');
+                        }
+                        
+                        // Toggle submenu visibility with animation
+                        if (submenu.style.display === 'none') {
+                            submenu.style.display = 'block';
+                        } else {
+                            submenu.style.display = 'none';
+                        }
+                    });
+                }
+            });
+            
+            // Highlight active menu items
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                    
+                    // Highlight parent menu if in submenu
+                    const parentItem = link.closest('.submenu');
+                    if (parentItem && parentItem.previousElementSibling) {
+                        parentItem.previousElementSibling.classList.add('active');
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
